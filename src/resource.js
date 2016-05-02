@@ -14,6 +14,10 @@ var res = {
 	s_Andy_png : "res/andy.png",
 	s_Andy_mp3 : "res/andy.mp3",
 	s_Futura : "res/futura-48.fnt",
+	s_Springsun_mp3 : "res/springsun.mp3",
+	s_Rhythm_json : "res/rhythm.json",
+	s_Tzw_mp3 : "res/tzw.mp3",
+	s_Tzw_json : "res/tzw.json"
 };
 
 var g_resources = [];

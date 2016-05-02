@@ -2,7 +2,18 @@ var game4KeyLayer = cc.Layer.extend({
     ctor:function() {
         // body...
         this._super();
-        cc.audioEngine.playMusic(res.s_Andy_mp3, true);
+        cc.audioEngine.playMusic(res.s_Springsun_mp3, true);
+
+        var self = this;
+        this.rhythm = null;
+        this.rhythmIndex = 0;
+        cc.loader.load(res.s_Rhythm_json,function(err, results){
+            if(err){
+                return;
+            }   
+            self.rhythm = results[0].rhythm; 
+        });
+
         var winSize = cc.director.getWinSize();
 
         var perKeyW = winSize.width / 8;
@@ -33,6 +44,12 @@ var game4KeyLayer = cc.Layer.extend({
         panl4KSprite.setPosition(winSize.width/2, 60);
         this.addChild(panl4KSprite, 1);
 
+        //生命槽
+        var top = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("top.png"));
+        top.setPosition(winSize.width / 2, winSize.height - 60);
+        top.setScale(2);
+        this.addChild(top, 1);
+
         var base = winSize.width/3 + 70;
         var path =  winSize.width /15;
         this.bornNotePos1 = cc.p(base,winSize.height - 110);
@@ -40,7 +57,16 @@ var game4KeyLayer = cc.Layer.extend({
         this.bornNotePos3 = cc.p(base+2*path,winSize.height - 110);
         this.bornNotePos4 = cc.p(base+3*path,winSize.height - 110);
 
-        //按键
+        //返回键
+        var pCloseItem = new cc.MenuItemImage(res.s_CloseNormal,res.s_CloseSelected, 
+            res.s_CloseSelected, this.menuCloseCallback,this);
+        pCloseItem.setPosition(40, winSize.height - 120);
+        pCloseItem.setScale(2);
+        var pMenu = new cc.Menu(pCloseItem);
+        pMenu.setPosition(0, 0);
+        this.addChild(pMenu, 1);
+
+        //rhythm按键
         var bottomButton0_1 = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("button_4key_0_1.png"));
         bottomButton0_1.setPosition(perKeyW + 15, panl4KSprite.y + 20);
         bottomButton0_1.setScale(2.5);
@@ -61,7 +87,7 @@ var game4KeyLayer = cc.Layer.extend({
         bottomButton0_4.setScale(2.5);
         this.addChild(bottomButton0_4, 3);
 
-        //按键特效
+        //rhythm按键特效
         var bottomButton1_1 = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("button_4key_1_1.png"));
         bottomButton1_1.setPosition(perKeyW + 15, panl4KSprite.y + 20);
         bottomButton1_1.setScale(2.5);
@@ -136,13 +162,21 @@ var game4KeyLayer = cc.Layer.extend({
             }
         });
         cc.eventManager.addListener(listener,this);
-        this.schedule(this.born,0.5);  
+        this.schedule(this.born, 1.28);  
         return true;
     },
 
 
 
     born:function(){
+        if (this.rhythmIndex < this.rhythm.length){
+            this.schedule(this.born, this.rhythm[this.rhythmIndex]);
+            this.rhythmIndex++;
+        }
+        else{
+            this.unschedule(this.born);
+        }
+
         var rand=Math.random();
         rand=rand*100;
         rand=(Math.floor(rand))%4+1;
@@ -193,12 +227,16 @@ var game4KeyLayer = cc.Layer.extend({
 
     },
 
+    menuCloseCallback:function(){
+        cc.director.runScene(new HelloWorldScene());
+    },
+
     pCallback:function(object){
         var winSize = cc.director.getWinSize();
         //console.log(v);
         this.curCombo = 0;
         var curCombLable = this.getChildByTag(10);
-        curCombLable.setString(parseInt(this.curCombo));
+        curCombLable.setString("");
 
         var miss = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("s_miss.png"));
         miss.setPosition(winSize.width/2, winSize.height - 60);
