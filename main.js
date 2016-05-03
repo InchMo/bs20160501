@@ -69,7 +69,7 @@ cc.game.onStart = function(){
     cc.view.resizeWithBrowserSize(true);
     //load resources
     cc.LoaderScene.preload(g_resources, function () {
-        cc.director.runScene(new HelloWorldScene());
+        cc.director.runScene(new HelloWorldScene());    //new一个首页场景对象且运行
     }, this);
 };
 cc.game.run();

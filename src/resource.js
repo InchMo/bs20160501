@@ -11,6 +11,8 @@ var res = {
 	s_Score_plist : "res/score.plist",
 	s_Jinscore_plist : "res/jinscore.plist",
 	s_Jinscore_png : "res/jinscore.png",
+	s_Buttonsy_jpg : "res/buttonsy.jpg",
+	s_Buttonsy1_jpg : "res/buttonsy1.jpg",
 	s_Andy_png : "res/andy.png",
 	s_Andy_mp3 : "res/andy.mp3",
 	s_Futura : "res/futura-48.fnt",
