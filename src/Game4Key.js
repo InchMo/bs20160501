@@ -106,10 +106,15 @@ var game4KeyLayer = cc.Layer.extend({
         this.addChild(top, 5);
 
         //生命值
-        var life = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("hp.png"));
-        life.setPosition(top.x - 312, top.y + 25);
-        life.setScale(2.15);
-        this.addChild(life, 5);
+        this.life = 100;
+        this.lifeBar = cc.ProgressTimer.create(new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("hp.png")));
+        this.lifeBar.setType(cc.ProgressTimer.TYPE_BAR);
+        this.lifeBar.setMidpoint(cc.p(0, 0.5));
+        this.lifeBar.setBarChangeRate(cc.p(1, 0));
+        this.lifeBar.setPosition(top.x - 311, top.y + 25);
+        this.lifeBar.setScale(2.15);
+        this.lifeBar.runAction(cc.ProgressTo.create(0.5, this.life));
+        this.addChild(this.lifeBar, 5);
 
         //返回键
         var pCloseItem = new cc.MenuItemImage(res.s_Buttonsy_jpg,res.s_Buttonsy1_jpg, 
@@ -288,6 +293,10 @@ var game4KeyLayer = cc.Layer.extend({
         this.addChild(miss, 4);
         var seq = cc.Sequence.create(cc.ScaleTo.create(0.5, 3), cc.CallFunc.create(this.s_pCallback, this, miss));
         miss.runAction(seq);
+        
+        this.life = this.life - 10;
+        this.lifeBar.runAction(cc.ProgressTo.create(0.5, this.life));
+
         if (this.rhythmIndex < (this.rhythm.length - 1)) {
             this.born();    
             this.rhythmIndex++;       
