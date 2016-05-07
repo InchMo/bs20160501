@@ -4,20 +4,17 @@ var game4KeyLayer = cc.Layer.extend({
         // body...
         this._super();
 
-        //播放音乐
-        cc.audioEngine.playMusic(res.s_Springsun_mp3, true);
-
         //加载谱面
         var self = this;
         this.rhythm = null;
         this.rhythmIndex = 0;
-        cc.loader.load(res.s_Rhythm_json,function(err, results){
+        cc.loader.load(res.s_Xpg_json,function(err, results){
             if(err){
                 return;
             }   
             self.rhythm = results[0].rhythm; 
-        });
-
+        });        
+        
         //一些base参数
         var winSize = cc.director.getWinSize();
         var perKeyW = winSize.width / 8;
@@ -52,10 +49,20 @@ var game4KeyLayer = cc.Layer.extend({
         this.addChild(panl4KSprite, 1);
 
         //note出生位置
-        this.bornNotePos1 = cc.p(panlGameSprite.x - 50, panlGameSprite.y);
-        this.bornNotePos2 = cc.p(panlGameSprite.x - 20, panlGameSprite.y);
-        this.bornNotePos3 = cc.p(panlGameSprite.x + 20, panlGameSprite.y);
-        this.bornNotePos4 = cc.p(panlGameSprite.x + 50, panlGameSprite.y);
+        this.bornNotePos0_0 = cc.p(panlGameSprite.x - 40, winSize.height + 30);
+        this.bornNotePos1_0 = cc.p(panlGameSprite.x - 20, winSize.height + 30);
+        this.bornNotePos2_0 = cc.p(panlGameSprite.x + 20, winSize.height + 30);
+        this.bornNotePos3_0 = cc.p(panlGameSprite.x + 40, winSize.height + 30);
+
+        this.bornNotePos0_1 = cc.p(panlGameSprite.x - 40, winSize.height);
+        this.bornNotePos1_1 = cc.p(panlGameSprite.x - 20, winSize.height);
+        this.bornNotePos2_1 = cc.p(panlGameSprite.x + 20, winSize.height);
+        this.bornNotePos3_1 = cc.p(panlGameSprite.x + 40, winSize.height);
+
+        this.bornNotePos0_2 = cc.p(this.perNoteBottom_X * 1 - 50, 0);
+        this.bornNotePos1_2 = cc.p(this.perNoteBottom_X * 3 - 15, 0);
+        this.bornNotePos2_2 = cc.p(this.perNoteBottom_X * 5 + 20, 0);
+        this.bornNotePos3_2 = cc.p(this.perNoteBottom_X * 7 + 50, 0);
 
         //note滑道边缘线
         lSide = cc.Sprite.create(cc.spriteFrameCache.getSpriteFrame("b_side.png"));
@@ -96,7 +103,13 @@ var game4KeyLayer = cc.Layer.extend({
         var top = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("top.png"));
         top.setPosition(winSize.width / 2, winSize.height - 60);
         top.setScale(2);
-        this.addChild(top, 4);
+        this.addChild(top, 5);
+
+        //生命值
+        var life = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("hp.png"));
+        life.setPosition(top.x - 312, top.y + 25);
+        life.setScale(2.15);
+        this.addChild(life, 5);
 
         //返回键
         var pCloseItem = new cc.MenuItemImage(res.s_Buttonsy_jpg,res.s_Buttonsy1_jpg, 
@@ -156,9 +169,17 @@ var game4KeyLayer = cc.Layer.extend({
         //score  分数
         var sBottom= top;
         var scoreLable = new cc.LabelAtlas("0", res.s_Jinscore_plist);
-        scoreLable.setScale(2);
-        scoreLable.setPosition(winSize.width - 40, sBottom.y);
+        scoreLable.setScale(1.5);
+        scoreLable.setPosition(winSize.width - 120, sBottom.y);
         this.addChild(scoreLable, 10, 11);
+
+        //暂停按钮  
+        var pauseItem = new cc.MenuItemImage(cc.spriteFrameCache.getSpriteFrame("pause_1.png"), cc.spriteFrameCache.getSpriteFrame("pause_2.png"), 
+            cc.spriteFrameCache.getSpriteFrame("pause_2.png"), this.menuCloseCallback,this);
+        pauseItem.setScale(2);
+        var pauseMenu = new cc.Menu(pauseItem);
+        pauseMenu.setPosition(winSize.width - 35, sBottom.y + 15);
+        this.addChild(pauseMenu, 5);
 
         //击中区域划分
         var buttonx = this.bottomButton0_1.x;
@@ -180,73 +201,73 @@ var game4KeyLayer = cc.Layer.extend({
             onTouchMoved: this.onTouchMoved,
             onTouchEnded: this.onTouchEnded,
             onTouchCancelled: this.onTouchCancelled
-        },this);
-        this.schedule(this.born, 1.28);  
+        },this); 
+
+        //播放音乐
+        this.startScale = 0.3;
+        this.endScale = 3;
+        this.note = null;
+        this.spawn = null;
+        this.seq = null;
+        this.interval = 0;
+        this.nowTime = 0;
+        this.baseTime = new Date().getTime();
+        cc.audioEngine.playMusic(res.s_Xpg_mp3, true);
+        for (; this.rhythmIndex < 5; this.rhythmIndex++){
+            this.born();
+        }
         return true;
     },
 
     //note生成函数 
     born:function(){
-        if (this.rhythmIndex < this.rhythm.length){
-            this.schedule(this.born, this.rhythm[this.rhythmIndex]);
-            this.rhythmIndex++;
+        var onePosition = null;
+        var twoPosition = null;
+        var threePosition = null;
+        var image = null;
+        var addSore = null;
+        if (this.rhythm[this.rhythmIndex].p == 0){          
+            onePositon = this.bornNotePos0_0;
+            twoPosition = this.bornNotePos0_1;
+            threePosition = this.bornNotePos0_2;
+            image = "button_4key_3_1.png";
+            addSore = 1;
+        }
+        else if (this.rhythm[this.rhythmIndex].p == 1){
+            onePositon = this.bornNotePos1_0;
+            twoPosition = this.bornNotePos1_1;
+            threePosition = this.bornNotePos1_2;
+            image = "button_4key_3_2.png";
+            addSore = 2;
+        }
+        else if (this.rhythm[this.rhythmIndex].p == 2){
+            onePositon = this.bornNotePos2_0;
+            twoPosition = this.bornNotePos2_1;
+            threePosition = this.bornNotePos2_2;
+            image = "button_4key_3_3.png";
+            addSore = 3;
         }
         else{
-            this.unschedule(this.born);
+            onePositon = this.bornNotePos3_0;
+            twoPosition = this.bornNotePos3_1;
+            threePosition = this.bornNotePos3_2;
+            image = "button_4key_3_4.png";
+            addSore = 4;
         }
-
-        var rand=Math.random();
-        rand=rand*100;
-        rand=(Math.floor(rand))%4+1;
-
-        var startScale = 0.4;
-        var endScale = 3;
-        if (rand == 1) {
-            var musicNote_4_1 = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("button_4key_3_1.png"));
-            musicNote_4_1.setPosition(this.bornNotePos1);//bornNotePos1
-            musicNote_4_1.setScale(startScale);
-            this.addChild(musicNote_4_1, 4, 1);
-            var spawn = cc.Spawn.create(cc.ScaleTo.create(this.speed, endScale),
-                    new cc.moveTo(this.speed, cc.p(this.perNoteBottom_X - 70, -40)));
-            var seq = new cc.Sequence(spawn, cc.CallFunc.create(this.pCallback, this,  musicNote_4_1));
-            musicNote_4_1.runAction(seq);
-        }
-
-        if (rand == 2) {
-            var musicNote_4_2 = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("button_4key_3_2.png"));
-            musicNote_4_2.setPosition(this.bornNotePos2);//bornNotePos1
-            musicNote_4_2.setScale(startScale);
-            this.addChild(musicNote_4_2, 4, 2);
-            var spawn = cc.Spawn.create(cc.ScaleTo.create(this.speed, endScale),
-                    new cc.moveTo(this.speed, cc.p(this.perNoteBottom_X*3 - 15, -40)));
-            var seq = new cc.Sequence(spawn, cc.CallFunc.create(this.pCallback, this,  musicNote_4_2));
-            musicNote_4_2.runAction(seq);
-        }
-
-        if (rand == 3) {
-            var musicNote_4_3 = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("button_4key_3_3.png"));
-            musicNote_4_3.setPosition(this.bornNotePos3);//bornNotePos1
-            musicNote_4_3.setScale(startScale);
-            this.addChild(musicNote_4_3, 4, 3);
-            var spawn = cc.Spawn.create(cc.ScaleTo.create(this.speed, endScale),
-                    new cc.moveTo(this.speed, cc.p(this.perNoteBottom_X*5 + 20, -40)));
-            var seq = new cc.Sequence(spawn, cc.CallFunc.create(this.pCallback, this,  musicNote_4_3));
-            musicNote_4_3.runAction(seq);
-        }
-
-        if (rand == 4) {
-            var musicNote_4_4 = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("button_4key_3_4.png"));
-            musicNote_4_4.setPosition(this.bornNotePos4);//bornNotePos1
-            musicNote_4_4.setScale(startScale);
-            this.addChild(musicNote_4_4, 4, 4);
-            var spawn = cc.Spawn.create(cc.ScaleTo.create(this.speed, endScale),
-                    new cc.moveTo(this.speed, cc.p(this.perNoteBottom_X*7 + 70, -40)));
-            var seq = new cc.Sequence(spawn, cc.CallFunc.create(this.pCallback, this,  musicNote_4_4));
-            musicNote_4_4.runAction(seq);
-        }
+        this.note = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame(image));
+        this.note.setPosition(onePositon);
+        this.note.setScale(this.startScale); 
+        this.spawn = cc.Spawn.create(cc.ScaleTo.create(this.speed, this.endScale),
+        new cc.moveTo(this.speed, cc.p(threePosition)));
+        this.nowTime = new Date().getTime();
+        this.interval = this.nowTime - this.baseTime;
+        this.seq = cc.Sequence.create(new cc.moveTo((this.rhythm[this.rhythmIndex].t - 1 - (this.interval * 0.001)),
+        cc.p(twoPosition)),this.spawn, cc.CallFunc.create(this.pCallback, this,  this.note));
+        this.note.runAction(this.seq);
+        this.addChild(this.note, 4, addSore);
 
     },
-
+    
     //返回键的回调函数
     menuCloseCallback:function(){
         cc.audioEngine.playEffect(res.s_ModeSelect02,false);
@@ -262,11 +283,15 @@ var game4KeyLayer = cc.Layer.extend({
         curCombLable.setString("");
 
         var miss = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("s_miss.png"));
-        miss.setPosition(winSize.width/2, winSize.height - 60);
+        miss.setPosition(winSize.width/2, winSize.height/2 + 100);
         miss.setScale(0.5);
-        this.addChild(miss);
+        this.addChild(miss, 4);
         var seq = cc.Sequence.create(cc.ScaleTo.create(0.5, 3), cc.CallFunc.create(this.s_pCallback, this, miss));
         miss.runAction(seq);
+        if (this.rhythmIndex < (this.rhythm.length - 1)) {
+            this.born();    
+            this.rhythmIndex++;       
+        }
         object.removeFromParent(true);
     },
 
@@ -306,15 +331,31 @@ var game4KeyLayer = cc.Layer.extend({
         if (s_y >= s_grect_miny && s_y <= s_grect_maxy) { //大perfect
             checkid = 3;
             pNode.removeFromParent(true);
+             if (this.rhythmIndex < (this.rhythm.length - 1)) {
+                this.born(); 
+                this.rhythmIndex++;       
+            }
         } else if (s_y >= s_brect1_miny && s_y <= s_brect1_maxy) { //小perfect
             checkid = 2;
             pNode.removeFromParent(true);
+             if (this.rhythmIndex < (this.rhythm.length - 1)) {
+                this.born();
+                this.rhythmIndex++;           
+            }
         } else if (s_y >= s_prect_miny && s_y <= s_prect_maxy) { //great
             checkid = 1;
             pNode.removeFromParent(true);
+             if (this.rhythmIndex < (this.rhythm.length - 1)) {
+                this.born();   
+                this.rhythmIndex++;        
+            }
         } else if (s_y >= s_brect2_miny && s_y <= s_brect2_maxy) { //great
             checkid = 2;
             pNode.removeFromParent(true);
+             if (this.rhythmIndex < (this.rhythm.length - 1)) {
+                this.born();  
+                this.rhythmIndex++;          
+            }
         }else { //miss
             checkid = 0;
         }
@@ -344,28 +385,28 @@ var game4KeyLayer = cc.Layer.extend({
             this.curCombo++;
         }
         if(s_p != null){
-            s_p.setPosition(winSize.width/2, winSize.height - 60);
+            s_p.setPosition(winSize.width/2, winSize.height/2 + 100);
             s_p.setScale(0.5);
-            this.addChild(s_p);
+            this.addChild(s_p, 4);
             var seq = cc.Sequence.create(cc.ScaleTo.create(0.5, 3), cc.CallFunc.create(this.s_pCallback, this,  s_p));
             s_p.runAction(seq);
 
             var scoreLable = this.getChildByTag(11);
             if(this.score>9&&this.score<99)
-                scoreLable.setPosition(winSize.width - 80, scoreLable.y);
+                scoreLable.setPosition(winSize.width - 150, scoreLable.y);
             if(this.score>99&&this.score<999)
-                scoreLable.setPosition(winSize.width - 120, scoreLable.y);
+                scoreLable.setPosition(winSize.width - 180, scoreLable.y);
             if(this.score>999&&this.score<9999)
-                scoreLable.setPosition(winSize.width - 160, scoreLable.y);
+                scoreLable.setPosition(winSize.width - 210, scoreLable.y);
             if(this.score>9999&&this.score<99999)
-                scoreLable.setPosition(winSize.width - 200, scoreLable.y);
+                scoreLable.setPosition(winSize.width - 240, scoreLable.y);
             scoreLable.setString(parseInt(this.score));
         }
         var curCombLable = this.getChildByTag(10);
         curCombLable.setString(parseInt(this.curCombo));
     },
 
-    //note移动到达目的位置后的回调函数
+    //prefect等待特效的回调函数
     s_pCallback:function(object){
         object.removeFromParent(true);
     },
