@@ -4,11 +4,14 @@ var game4KeyLayer = cc.Layer.extend({
         // body...
         this._super();
 
+        this.musicName = null;
+        this.musicBeatMap = null;
+
         //加载谱面
         var self = this;
         this.rhythm = null;
         this.rhythmIndex = 0;
-        cc.loader.load(res.s_Xpg_json,function(err, results){
+        cc.loader.load(res.s_Caocao_4k_nm_json,function(err, results){
             if(err){
                 return;
             }   
@@ -29,7 +32,7 @@ var game4KeyLayer = cc.Layer.extend({
         this.key3Rect = cc.rect(perKeyW * 4, 0, perKeyW * 2, winSize.height / 2);
         this.key4Rect = cc.rect(perKeyW * 6, 0, perKeyW * 2, winSize.height / 2);
 
-        //当前音乐背景
+        //当前背景
         var pSprite = new cc.Sprite(res.s_Andy_png);
         pSprite.setScale(2);
         pSprite.setPosition(winSize.width/2, winSize.height/2);
@@ -118,7 +121,7 @@ var game4KeyLayer = cc.Layer.extend({
 
         //返回键
         var pCloseItem = new cc.MenuItemImage(res.s_Buttonsy_jpg,res.s_Buttonsy1_jpg, 
-            res.s_Buttonsy_jpg, this.menuCloseCallback,this);
+            res.s_Buttonsy_jpg, this.homeCallback,this);
         pCloseItem.setScale(0.4);
         var pMenu = new cc.Menu(pCloseItem);
         pMenu.setPosition(winSize.width - 45, winSize.height - 120);
@@ -180,7 +183,7 @@ var game4KeyLayer = cc.Layer.extend({
 
         //暂停按钮  
         var pauseItem = new cc.MenuItemImage(cc.spriteFrameCache.getSpriteFrame("pause_1.png"), cc.spriteFrameCache.getSpriteFrame("pause_2.png"), 
-            cc.spriteFrameCache.getSpriteFrame("pause_2.png"), this.menuCloseCallback,this);
+            cc.spriteFrameCache.getSpriteFrame("pause_2.png"), this.pauseItemCallback,this);
         pauseItem.setScale(2);
         var pauseMenu = new cc.Menu(pauseItem);
         pauseMenu.setPosition(winSize.width - 35, sBottom.y + 15);
@@ -217,7 +220,7 @@ var game4KeyLayer = cc.Layer.extend({
         this.interval = 0;
         this.nowTime = 0;
         this.baseTime = new Date().getTime();
-        cc.audioEngine.playMusic(res.s_Xpg_mp3, true);
+        cc.audioEngine.playMusic(res.s_Caocao_mp3, true);
         for (; this.rhythmIndex < 5; this.rhythmIndex++){
             this.born();
         }
@@ -272,11 +275,60 @@ var game4KeyLayer = cc.Layer.extend({
         this.addChild(this.note, 4, addSore);
 
     },
+
+    homeCallback:function(){
+        cc.director.runScene(new Home());
+    },
     
-    //返回键的回调函数
-    menuCloseCallback:function(){
-        cc.audioEngine.playEffect(res.s_ModeSelect02,false);
-        cc.director.runScene(new HelloWorldScene());
+    //暂停游戏键的回调函数
+    pauseItemCallback:function(){
+        var width = 300;
+        var height = 400;
+        var winSize = cc.director.getWinSize();
+        var scene = this.getParent(); 
+        var pauseGround = new cc.LayerColor(cc.color(0, 0, 0, 50));
+        scene.addChild(pauseGround, 1, 2);
+        var selectGround = new cc.LayerColor(cc.color(0, 0, 0, 100), width, height);
+        selectGround.setPosition(winSize.width/2 -  width/2, winSize.height/2 - height/2);
+        scene.addChild(selectGround, 1, 3);
+
+        var label1 = cc.LabelTTF.create("继续游戏", "Arial", 40, null, null, null);
+        var label2 = cc.LabelTTF.create("重新开始", "Arial", 40, null, null, null);
+        var label3 = cc.LabelTTF.create("返回首页", "Arial", 40, null, null, null);
+
+        var labelItem1 = cc.MenuItemSprite.create( label1, null, null, this.resumeItemCallback, this);
+        var labelItem2 = cc.MenuItemSprite.create( label2, null, null, this.restartGameCallback, this);
+        var labelItem3 = cc.MenuItemSprite.create( label3, null, null, this.returnHomeCallback, this);
+
+        var menu = new cc.Menu(labelItem1, labelItem2, labelItem3, null);
+        menu.alignItemsVerticallyWithPadding(30);
+        menu.setPosition(selectGround.width / 2, selectGround.height / 2);
+        selectGround.addChild(menu, 1);
+
+        scene.gamePause(this);
+        cc.audioEngine.pauseMusic();
+        
+    },
+
+    //恢复游戏键的回调函数
+    resumeItemCallback:function(){
+        var scene = this.getParent();
+        scene.gameResume(this);
+        cc.audioEngine.resumeMusic();
+        scene.getChildByTag(2).removeFromParent(true);
+        scene.getChildByTag(3).removeFromParent(true);
+    },
+
+    restartGameCallback:function(){
+        var scene = this.getParent();
+        scene.removeFromParent(true);
+        cc.director.runScene(new Game4KeyScene);
+
+    },
+
+    returnHomeCallback:function()
+    {
+        cc.director.runScene(new Home);
     },
 
     //特效的回调函数 
@@ -479,14 +531,50 @@ var game4KeyLayer = cc.Layer.extend({
     },
 
     //取消触摸事件处理函数 
-    onTouchCancelled:function(touch, event){}
+    onTouchCancelled:function(touch, event){
+
+    },
+
+    /*
+    init:function(){
+        console.log("this.init");
+    },
+    onEnter:function(){
+        console.log(this.musicName);
+        console.log(this.musicBeatMap);
+    },
+    */
 });
 
 //创建一个新场景
-var Game4KeyScene = cc.Scene.extend({
+var Game4KeyScene = cc.Scene.extend({   
     onEnter:function () {
         this._super();
         var layer = new game4KeyLayer();
-        this.addChild(layer);
-    }
+        layer.musicName = this.musicName; 
+        layer.musicBeatMap = this.musicBeatMap;
+        this.addChild(layer, 1, 1);
+    },
+    gamePause:function(target){
+        if (target != null) {
+            var children = target.getChildren();
+            if (children.length > 0) {
+                for (var i = 0; i <= children.length; i++) {
+                         this.gamePause(children[i]);
+                }
+             }
+            target.pause();
+        }
+    },
+    gameResume:function(target){
+         if (target != null) {
+            var children = target.getChildren();
+            if (children.length > 0) {
+                for (var i = 0; i <= children.length; i++) {
+                         this.gameResume(children[i]);
+                }
+             }
+            target.resume();
+        }
+    },
 });

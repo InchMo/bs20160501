@@ -13,7 +13,7 @@
 
     "jsList" : [
         "src/resource.js",
-        "src/HelloWorldScene.js",
+        "src/Home.js",
         "src/Game4Key.js"
     ]
 }
