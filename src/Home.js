@@ -4,6 +4,9 @@ var HomeLayer = cc.Layer.extend({
         //调用父类的构造函数 
         this._super();
 
+        //选中的音乐
+        this.selectMusic = null;
+
         //加载plist文件
         cc.spriteFrameCache.addSpriteFrames(res.s_Background_plist);
         cc.spriteFrameCache.addSpriteFrames(res.s_Button_plist); 
@@ -45,9 +48,12 @@ var HomeLayer = cc.Layer.extend({
         this.addChild(menu, 1);
 
         //
-        var label = cc.LabelTTF.create("已选歌曲：", "Arial", 40, null, null, null);
-        label.setPosition(winSize.width / 5, 40);
-        this.addChild(label);
+        this.label1 = cc.LabelTTF.create("已选歌曲：", "Arial", 40, null, null, null);
+        this.label1.setPosition(winSize.width / 5, 40);
+        this.addChild(this.label1);
+        this.label2 = cc.LabelTTF.create("无", "Arial", 20, null, null, null);
+        this.label2.setPosition(this.label1.x + 140 , this.label1.y);
+        this.addChild(this.label2);
 
         var startGameItem = new cc.MenuItemImage(cc.spriteFrameCache.getSpriteFrame("start.png"), cc.spriteFrameCache.getSpriteFrame("pause_2.png"), 
             cc.spriteFrameCache.getSpriteFrame("start.png"), this.startGameCallBack,this);
@@ -61,19 +67,19 @@ var HomeLayer = cc.Layer.extend({
             this._array.push("item_" + i);
         }
          // Create the list view
-        var listView = new ccui.ListView();
+        this.listView = new ccui.ListView();
             // set list view ex direction
-        listView.setDirection(ccui.ScrollView.DIR_VERTICAL);
-        listView.setTouchEnabled(true);
-        listView.setBounceEnabled(true);
+        this.listView.setDirection(ccui.ScrollView.DIR_VERTICAL);
+        this.listView.setTouchEnabled(true);
+        this.listView.setBounceEnabled(true);
         //listView.setBackGroundImage(res.s_Andy_png);
         //listView.setBackGroundImageScale9Enabled(true);
-        listView.setContentSize(cc.size(200, 300));
-        listView.setAnchorPoint(0.5, 0.5);
-        listView.x = winSize.width / 4 * 3;
-        listView.y = winSize.height / 2 - 50 ;
-        listView.addEventListener(this.test, this);
-        this.addChild(listView, 10);
+        this.listView.setContentSize(cc.size(200, 300));
+        this.listView.setAnchorPoint(0.5, 0.5);
+        this.listView.x = winSize.width / 4 * 3;
+        this.listView.y = winSize.height / 2 - 50 ;
+        this.listView.addEventListener(this.listViewCallBack, this);
+        this.addChild(this.listView, 10);
 
             // create model
         var default_button = new ccui.Button();
@@ -114,15 +120,15 @@ var HomeLayer = cc.Layer.extend({
 
             var custom_item = new ccui.Layout();
             custom_item.setContentSize(custom_button.getContentSize());
-            custom_item.width = listView.width;
+            custom_item.width = this.listView.width;
             custom_button.x = custom_item.width / 2;
             custom_button.y = custom_item.height / 2;
             custom_item.addChild(custom_button);
 
-            listView.pushBackCustomItem(custom_item);
+            this.listView.pushBackCustomItem(custom_item);
         }
             // insert custom item
-            var items_count = listView.getItems().length;
+            var items_count = this.listView.getItems().length;
             for (var i = 0; i < count / 4; ++i) {
                 var custom_button = new ccui.Button();
                 custom_button.setName("TextButton");
@@ -133,22 +139,22 @@ var HomeLayer = cc.Layer.extend({
 
                 var custom_item = new ccui.Layout();
                 custom_item.setContentSize(custom_button.getContentSize());
-                custom_item.width = listView.width;
+                custom_item.width = this.listView.width;
                 custom_button.x = custom_item.width / 2;
                 custom_button.y = custom_item.height / 2;
                 custom_item.addChild(custom_button);
 
-                listView.insertCustomItem(custom_item, items_count);
+                this.listView.insertCustomItem(custom_item, items_count);
             }
 
             // set item data
-          items_count = listView.getItems().length;
+          items_count = this.listView.getItems().length;
             for (var i = 0; i < 10; ++i) {
-                var item = listView.getItem(i);
+                var item = this.listView.getItem(i);
                 var button = item.getChildByName("TextButton");
-                var index = listView.getIndex(item);
+                var index = this.listView.getIndex(item);
                 button.setTitleColor(cc.color(0,0,0,255));
-                button.setTitleText(this._array[index], "Arial");
+                button.setTitleText(this._array[index]);
             }
             
             // remove last item
@@ -159,7 +165,7 @@ var HomeLayer = cc.Layer.extend({
             //listView.removeItem(items_count - 1);
 
             // set all items layout gravity
-            listView.setGravity(ccui.ListView.GRAVITY_CENTER_VERTICAL);
+            this.listView.setGravity(ccui.ListView.GRAVITY_CENTER_VERTICAL);
 
             
         //播放背景音乐
@@ -167,9 +173,24 @@ var HomeLayer = cc.Layer.extend({
         return true;
     },
     
-    test:function(){
-        console.log("test");
+    listViewCallBack:function(sender, type){
+        var listViewEx = sender;
+        var item = this.listView.getItem(listViewEx.getCurSelectedIndex());
+        var button = item.getChildByName("TextButton");
+        this.label2.setString(button.getTitleText());
     },
+
+    /*selectedItemEvent: function (sender, type) {
+        switch (type) {
+            case ccui.ListView.EVENT_SELECTED_ITEM:
+                var listViewEx = sender;
+                cc.log("select child index = " + listViewEx.getCurSelectedIndex());
+                break;
+
+            default:
+                break;
+        }
+    }*/
 
     startGameCallBack:function() {
         // body...
@@ -178,7 +199,7 @@ var HomeLayer = cc.Layer.extend({
 
         //切换至Game4Key场景 
         var newScene = new Game4KeyScene();
-        newScene.musicName = "andy";
+        newScene.musicName = res.s_Caocao_mp3;
         newScene.musicBeatMap = res.s_Caocao_4k_nm_json;
         cc.director.runScene(newScene);
     },
@@ -193,23 +214,3 @@ var Home = cc.Scene.extend({
         this.addChild(layer);
     }
 });
-
-
-/* 
-cc.eventManager.addListener({
-            event: cc.EventListener.MOUSE,
-            onMouseMove: function(event){
-                window.alert("Move..");
-                // do something...
-            },
-            onMouseUp: function(event){
-                window.alert("Up..");
-                // do something...
-            },
-            onMouseDown: function(event){
-               window.alert("Down..");
-                // do something...
-            },
-        },this);
-*/
-

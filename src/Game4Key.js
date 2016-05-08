@@ -1,17 +1,20 @@
 var game4KeyLayer = cc.Layer.extend({
     //层的构造函数 
-    ctor:function() {
+    ctor:function(musicName, musicBeatMap) {
         // body...
         this._super();
 
-        this.musicName = null;
-        this.musicBeatMap = null;
+        this.musicName = musicName;
+        this.musicBeatMap = musicBeatMap;
+
+        console.log(this.musicName);
+        console.log(this.musicBeatMap);
 
         //加载谱面
         var self = this;
         this.rhythm = null;
         this.rhythmIndex = 0;
-        cc.loader.load(res.s_Caocao_4k_nm_json,function(err, results){
+        cc.loader.load(this.musicBeatMap, function(err, results){
             if(err){
                 return;
             }   
@@ -220,7 +223,7 @@ var game4KeyLayer = cc.Layer.extend({
         this.interval = 0;
         this.nowTime = 0;
         this.baseTime = new Date().getTime();
-        cc.audioEngine.playMusic(res.s_Caocao_mp3, true);
+        cc.audioEngine.playMusic(this.musicName, true);
         for (; this.rhythmIndex < 5; this.rhythmIndex++){
             this.born();
         }
@@ -550,9 +553,9 @@ var game4KeyLayer = cc.Layer.extend({
 var Game4KeyScene = cc.Scene.extend({   
     onEnter:function () {
         this._super();
-        var layer = new game4KeyLayer();
-        layer.musicName = this.musicName; 
-        layer.musicBeatMap = this.musicBeatMap;
+        var layer = new game4KeyLayer(this.musicName, this.musicBeatMap);
+        console.log(this.musicName);
+        console.log(this.musicBeatMap);
         this.addChild(layer, 1, 1);
     },
     gamePause:function(target){
