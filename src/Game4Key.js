@@ -1,14 +1,13 @@
 var game4KeyLayer = cc.Layer.extend({
     //层的构造函数 
-    ctor:function(musicName, musicBeatMap) {
+    ctor:function(musicName, musicBeatMap, musicImage) {
         // body...
         this._super();
 
         this.musicName = musicName;
         this.musicBeatMap = musicBeatMap;
-
-        console.log(this.musicName);
-        console.log(this.musicBeatMap);
+        this.musicImage = musicImage;
+        this.musicTime = null;
 
         //加载谱面
         var self = this;
@@ -19,6 +18,7 @@ var game4KeyLayer = cc.Layer.extend({
                 return;
             }   
             self.rhythm = results[0].rhythm; 
+            self.musicTime = results[0].allTime;
         });        
         
         //一些base参数
@@ -35,8 +35,8 @@ var game4KeyLayer = cc.Layer.extend({
         this.key3Rect = cc.rect(perKeyW * 4, 0, perKeyW * 2, winSize.height / 2);
         this.key4Rect = cc.rect(perKeyW * 6, 0, perKeyW * 2, winSize.height / 2);
 
-        //当前背景
-        var pSprite = new cc.Sprite(res.s_Andy_png);
+        //当前背景图片
+        var pSprite = new cc.Sprite(this.musicImage);
         pSprite.setScale(2);
         pSprite.setPosition(winSize.width/2, winSize.height/2);
         this.addChild(pSprite, 0);
@@ -121,6 +121,16 @@ var game4KeyLayer = cc.Layer.extend({
         this.lifeBar.setScale(2.15);
         this.lifeBar.runAction(cc.ProgressTo.create(0.5, this.life));
         this.addChild(this.lifeBar, 5);
+
+        //进度条
+        this.jinduBar = cc.ProgressTimer.create(new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("jindu.png")));
+        this.jinduBar.setType(cc.ProgressTimer.TYPE_BAR);
+        this.jinduBar.setMidpoint(cc.p(0, 0.5));
+        this.jinduBar.setBarChangeRate(cc.p(1, 0));
+        this.jinduBar.setScale(2);
+        this.jinduBar.setPosition(winSize.width/2, winSize.height - 2);
+        this.jinduBar.runAction(cc.ProgressTo.create(this.musicTime/1000, 100));
+        this.addChild(this.jinduBar, 100);
 
         //返回键
         var pCloseItem = new cc.MenuItemImage(res.s_Buttonsy_jpg,res.s_Buttonsy1_jpg, 
@@ -309,8 +319,7 @@ var game4KeyLayer = cc.Layer.extend({
         selectGround.addChild(menu, 1);
 
         scene.gamePause(this);
-        cc.audioEngine.pauseMusic();
-        
+        cc.audioEngine.pauseMusic();      
     },
 
     //恢复游戏键的回调函数
@@ -323,10 +332,16 @@ var game4KeyLayer = cc.Layer.extend({
     },
 
     restartGameCallback:function(){
+        var musicName = this.musicName;
+        var musicBeatMap = this.musicBeatMap;
+        var musicImage = this.musicImage;
         var scene = this.getParent();
-        scene.removeFromParent(true);
-        cc.director.runScene(new Game4KeyScene);
-
+        scene.getChildByTag(2).removeFromParent(true);
+        scene.getChildByTag(3).removeFromParent(true);
+        this.removeFromParent(true);
+        var layer = new game4KeyLayer(musicName, musicBeatMap, musicImage);
+        scene.addChild(layer);
+        //cc.director.runScene(new Game4KeyScene);
     },
 
     returnHomeCallback:function()
@@ -343,13 +358,13 @@ var game4KeyLayer = cc.Layer.extend({
         curCombLable.setString("");
 
         var miss = new cc.Sprite(cc.spriteFrameCache.getSpriteFrame("s_miss.png"));
-        miss.setPosition(winSize.width/2, winSize.height/2 + 100);
+        miss.setPosition(winSize.width/2, winSize.height/2 + 150);
         miss.setScale(0.5);
         this.addChild(miss, 4);
-        var seq = cc.Sequence.create(cc.ScaleTo.create(0.5, 3), cc.CallFunc.create(this.s_pCallback, this, miss));
+        var seq = cc.Sequence.create(cc.ScaleTo.create(0.2, 2.5), cc.CallFunc.create(this.s_pCallback, this, miss));
         miss.runAction(seq);
         
-        this.life = this.life - 10;
+        this.life = this.life - 5;
         this.lifeBar.runAction(cc.ProgressTo.create(0.5, this.life));
 
         if (this.rhythmIndex < (this.rhythm.length - 1)) {
@@ -449,10 +464,10 @@ var game4KeyLayer = cc.Layer.extend({
             this.curCombo++;
         }
         if(s_p != null){
-            s_p.setPosition(winSize.width/2, winSize.height/2 + 100);
+            s_p.setPosition(winSize.width/2, winSize.height/2 + 150);
             s_p.setScale(0.5);
             this.addChild(s_p, 4);
-            var seq = cc.Sequence.create(cc.ScaleTo.create(0.5, 3), cc.CallFunc.create(this.s_pCallback, this,  s_p));
+            var seq = cc.Sequence.create(cc.ScaleTo.create(0.2, 2.5), cc.CallFunc.create(this.s_pCallback, this,  s_p));
             s_p.runAction(seq);
 
             var scoreLable = this.getChildByTag(11);
@@ -538,24 +553,13 @@ var game4KeyLayer = cc.Layer.extend({
 
     },
 
-    /*
-    init:function(){
-        console.log("this.init");
-    },
-    onEnter:function(){
-        console.log(this.musicName);
-        console.log(this.musicBeatMap);
-    },
-    */
 });
 
 //创建一个新场景
 var Game4KeyScene = cc.Scene.extend({   
     onEnter:function () {
         this._super();
-        var layer = new game4KeyLayer(this.musicName, this.musicBeatMap);
-        console.log(this.musicName);
-        console.log(this.musicBeatMap);
+        var layer = new game4KeyLayer(this.musicName, this.musicBeatMap, this.musicImage);
         this.addChild(layer, 1, 1);
     },
     gamePause:function(target){
